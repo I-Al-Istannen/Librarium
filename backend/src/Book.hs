@@ -88,18 +88,18 @@ example = Book
  { _title = "This is a book"
  , _author = ["Author", "are"]
  , _isbn = Isbn10 [0,3,0,6,4,0,6,1,5,2]
- , _summary = "This is a book"
- , _language = "De"
- , _pages = 20
+ , _summary = Just "This is a book"
+ , _language = Just "De"
+ , _pages = Just 20
  }
 
 data Book = Book
   { _title    :: String
   , _isbn     :: Isbn
   , _author   :: [String]
-  , _summary  :: String
-  , _pages    :: Int
-  , _language :: String
+  , _summary  :: Maybe String
+  , _pages    :: Maybe Int
+  , _language :: Maybe String
   } deriving (Generic, Show)
 
 instance A.ToJSON Isbn where
