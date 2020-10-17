@@ -15,8 +15,10 @@ description:         Please see the README.
 
 dependencies:
 - base >= 4.7 && < 5
-- transformers
+- aeson
+- bytestring
 - text
+- transformers
 
 library:
   source-dirs: src
