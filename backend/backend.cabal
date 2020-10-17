@@ -1,0 +1,50 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 87a76f86ee37c0f3d7958d85a3f0b17f955d602b28be1d1a2cb76194259fab5f
+
+name:           backend
+version:        0.1.0.0
+description:    Please see the README.
+homepage:       https://github.com/I-Al-Istannen/backend#readme
+bug-reports:    https://github.com/I-Al-Istannen/backend/issues
+author:         I Al Istannen
+maintainer:     ialistannen@posteo.de
+copyright:      2020 I Al Istannen
+license:        MIT
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/I-Al-Istannen/backend
+
+library
+  exposed-modules:
+      Book
+      Storage
+  other-modules:
+      Paths_backend
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , text
+    , transformers
+  default-language: Haskell2010
+
+executable backend-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_backend
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      backend
+    , base >=4.7 && <5
+    , text
+    , transformers
+  default-language: Haskell2010
