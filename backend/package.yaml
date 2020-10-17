@@ -20,6 +20,8 @@ dependencies:
 - scalpel
 - text
 - transformers
+- http-client
+- http-conduit
 
 library:
   source-dirs: src

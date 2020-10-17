@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Scraping.GoodreadsScraper
-  ( scrapeGoodreads
+  ( CrawlResult(..)
+  ,  scrapeGoodreads
   )
   where
 
