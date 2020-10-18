@@ -37,6 +37,9 @@ instance A.FromJSON Isbn where
       (Right isbn)  -> pure isbn
       (Left errors) -> fail $ intercalate ", " $ map show errors
 
+instance Eq Isbn where
+  a == b = show a == show b
+
 instance Show Isbn where
   show (Isbn10 numbers) = map isbnIntToDigit numbers
     where

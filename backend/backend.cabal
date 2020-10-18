@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b697936e0d8a85caa7d3d585831889565437c6102d96e2f23dfcc8bd9487470c
+-- hash: 33b72471c25ae0ddbc071cea0d372023c3741c4be588abd99929ea23116a70e6
 
 name:           backend
 version:        0.1.0.0
@@ -41,6 +41,7 @@ library
     , scalpel
     , servant
     , servant-server >=0.18
+    , stm
     , text
     , transformers
     , wai
@@ -65,6 +66,7 @@ executable backend-exe
     , scalpel
     , servant
     , servant-server >=0.18
+    , stm
     , text
     , transformers
     , wai

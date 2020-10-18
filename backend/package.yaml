@@ -23,6 +23,7 @@ dependencies:
 - scalpel
 - servant
 - servant-server >= 0.18
+- stm
 - text
 - transformers
 - wai
