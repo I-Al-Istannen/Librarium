@@ -8,7 +8,6 @@ module Book
   , toIsbn13
   , jsonToBook
   , bookToJson
-  , example
   , mapLeft
   ) where
 
@@ -18,6 +17,7 @@ import           Control.Monad.Trans.Except
 import qualified Data.Aeson                 as A
 import qualified Data.ByteString.Lazy       as BSL
 import           Data.Char
+import           Data.List
 import           Data.Maybe
 import qualified Data.Text                  as T
 import qualified Data.Text.Encoding         as T
@@ -93,32 +93,26 @@ toIsbn13 (Isbn10 numbers) = let
   in Isbn13 $ isbn13Numbers ++ [finalDigit]
 toIsbn13 isbn             = isbn
 
-example :: Book
-example = Book
- { _title = "This is a book"
- , _author = ["Author", "are"]
- , _isbn = Isbn10 [0,3,0,6,4,0,6,1,5,2]
- , _summary = Just "This is a book"
- , _language = Just "De"
- , _pages = Just 20
- }
-
 data Book = Book
-  { _title    :: String
-  , _isbn     :: Isbn
-  , _author   :: [String]
-  , _summary  :: Maybe String
-  , _pages    :: Maybe Int
-  , _language :: Maybe String
+  { _title     :: String
+  , _isbn      :: Isbn
+  , _author    :: [String]
+  , _summary   :: Maybe String
+  , _pages     :: Maybe Int
+  , _language  :: Maybe String
+  , _crawledBy :: String
   } deriving (Generic, Show)
 
 instance A.ToJSON Isbn where
-  toEncoding = A.genericToEncoding A.defaultOptions
+  toJSON isbn = A.toJSON $ show isbn
+instance A.FromJSON Isbn where
+  parseJSON = A.withText "isbn string" $ \isbnString -> do
+    case isbnFromString (T.unpack isbnString) of
+      (Right isbn)  -> pure isbn
+      (Left errors) -> fail $ intercalate ", " $ map show errors
 
 instance A.ToJSON Book where
   toEncoding = A.genericToEncoding A.defaultOptions
-
-instance A.FromJSON Isbn
 instance A.FromJSON Book
 
 bookToJson :: Book -> T.Text

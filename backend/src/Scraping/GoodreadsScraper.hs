@@ -2,7 +2,7 @@
 
 module Scraping.GoodreadsScraper
   ( CrawlResult(..)
-  ,  scrapeGoodreads
+  , scrapeGoodreads
   )
   where
 
@@ -30,6 +30,7 @@ _goodreadsScraper isbn = CrawlResult <$> book <*> optional coverImageUrl
       <*> optional description
       <*> optional pages
       <*> optional language
+      <*> pure "Goodreads"
 
     title :: Scraper T.Text String
     title = chroot (AnyTag @: ["id" @= "bookTitle"]) $ T.unpack . T.strip <$> text anySelector
