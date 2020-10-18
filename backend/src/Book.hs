@@ -40,6 +40,9 @@ instance A.FromJSON Isbn where
 instance Eq Isbn where
   a == b = show a == show b
 
+instance Ord Isbn where
+  a <= b = show a <= show b
+
 instance Show Isbn where
   show (Isbn10 numbers) = map isbnIntToDigit numbers
     where

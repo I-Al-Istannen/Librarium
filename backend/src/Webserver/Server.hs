@@ -22,7 +22,7 @@ import           Control.Concurrent
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
-import           Data.List
+import qualified Data.Map                   as Map
 import           Data.Proxy
 import qualified Data.Text                  as T
 import           Network.Wai
@@ -43,7 +43,7 @@ type BookApi =
 
 data ServerConfig = ServerConfig {
   serverDataDir :: FilePath,
-  serverBooks   :: MVar [Book]
+  serverBooks   :: MVar (Map.Map Isbn Book)
 }
 
 type AppMonad = ReaderT ServerConfig Handler
@@ -52,27 +52,30 @@ _buildError :: ServerError -> String -> ServerError
 _buildError baseError msg = baseError { errBody = encode $ object ["error" .= msg]}
 
 server :: ServerT BookApi AppMonad
-server = books :<|> bookByIsbn :<|> addBookByIsbn :<|> booksByTitle :<|> emptyServer
+server = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> booksByTitle :<|> emptyServer
   where
     bookDir :: AppMonad FilePath
     bookDir = serverDataDir <$> ask
 
-    books :: AppMonad [Book]
-    books = do
-      ServerConfig{serverBooks = allBooks} <- ask
-      liftIO $ readMVar allBooks
+    bookMap :: AppMonad (Map.Map Isbn Book)
+    bookMap = do
+       mVar <- serverBooks <$> ask
+       liftIO $ readMVar mVar
+
+    allBooks :: AppMonad [Book]
+    allBooks = Map.elems <$> bookMap
 
     bookByIsbn :: Isbn -> AppMonad Book
     bookByIsbn isbn = do
-      maybeBook <- find ((== isbn) . _isbn) <$> books
+      maybeBook <- (Map.!? isbn) <$> bookMap
 
       case maybeBook of
         Nothing     -> throwError $ _buildError err404 "Book not found"
         (Just book) -> return book
 
     booksByTitle :: Maybe T.Text -> AppMonad [Book]
-    booksByTitle Nothing              = books
-    booksByTitle (Just titleFragment) = filter predicate <$> books
+    booksByTitle Nothing              = allBooks
+    booksByTitle (Just titleFragment) = filter predicate <$> allBooks
       where
         predicate :: Book -> Bool
         predicate book = titleFragment `T.isInfixOf` T.pack (_title book)
@@ -99,10 +102,7 @@ server = books :<|> bookByIsbn :<|> addBookByIsbn :<|> booksByTitle :<|> emptySe
       liftIO $ storeBook dir book
 
       ServerConfig{serverBooks = books} <- ask
-      liftIO $ modifyMVar_ books (pure . insertReplace book)
-      where
-        insertReplace :: Book -> [Book] -> [Book]
-        insertReplace book books = book : filter ( (_isbn book /=) . _isbn) books
+      liftIO $ modifyMVar_ books (pure . Map.insert isbn book)
 
 
 bookApi :: Proxy BookApi
@@ -121,7 +121,8 @@ main = do
   let config = ServerConfig { serverDataDir = "/tmp/test", serverBooks = initialBooks }
 
   allBooks <- listAllBooks $ serverDataDir config
-  putMVar initialBooks allBooks
+  let bookMap = map (\b -> (_isbn b, b)) allBooks
+  putMVar initialBooks $ Map.fromList bookMap
 
   run 8081 (app config)
 

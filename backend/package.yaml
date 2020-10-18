@@ -17,13 +17,13 @@ dependencies:
 - base >= 4.7 && < 5
 - aeson
 - bytestring
+- containers
 - directory
 - http-client
 - http-conduit
 - scalpel
 - servant
 - servant-server >= 0.18
-- stm
 - text
 - transformers
 - wai
