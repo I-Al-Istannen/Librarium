@@ -17,11 +17,12 @@ dependencies:
 - base >= 4.7 && < 5
 - aeson
 - bytestring
+- directory
+- http-client
+- http-conduit
 - scalpel
 - text
 - transformers
-- http-client
-- http-conduit
 
 library:
   source-dirs: src

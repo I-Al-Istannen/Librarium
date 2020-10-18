@@ -3,14 +3,19 @@
 module Storage
   ( loadBook
   , storeBook
+  , listAllIsbns
+  , listAllBooks
   , storeCover
   ) where
 
 import           Book
 import           Control.Monad
 import qualified Data.ByteString     as BS
+import           Data.Either
+import           Data.Maybe
 import qualified Data.Text           as T
 import           Network.HTTP.Simple
+import           System.Directory
 
 type Url = String
 
@@ -31,6 +36,24 @@ storeBook directory book = do
   return ()
   where
     filePath = _isbnToPath directory (_isbn book)
+
+listAllIsbns :: FilePath -> IO [Isbn]
+listAllIsbns directory = do
+  contents <- getDirectoryContents directory
+
+  let isbnFiles = filter (T.isSuffixOf ".json" . T.pack) contents
+  let isbnNames = mapMaybe (T.stripSuffix ".json" . T.pack) isbnFiles
+  let isbns = rights $ map (isbnFromString  . T.unpack) isbnNames
+
+  return isbns
+
+listAllBooks :: FilePath -> IO [Book]
+listAllBooks directory = do
+  isbns <- listAllIsbns directory
+
+  books <- mapM (loadBook directory) isbns
+
+  return $ rights books
 
 storeCover :: FilePath -> Url -> Isbn -> IO ()
 storeCover directory url isbn = do

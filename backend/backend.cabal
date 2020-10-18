@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0412197d595adfe8fa6f2cbf1663ed4232722501cc8de1f36fc5a8a903b9cd97
+-- hash: c402222c49bd641d510676a70b5df0c5afc5c5a1bf74ac65f18d4b84ccb8ebf2
 
 name:           backend
 version:        0.1.0.0
@@ -34,6 +34,7 @@ library
       aeson
     , base >=4.7 && <5
     , bytestring
+    , directory
     , http-client
     , http-conduit
     , scalpel
@@ -53,6 +54,7 @@ executable backend-exe
     , backend
     , base >=4.7 && <5
     , bytestring
+    , directory
     , http-client
     , http-conduit
     , scalpel
