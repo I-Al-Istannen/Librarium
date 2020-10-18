@@ -38,7 +38,8 @@ type BookApi =
   :<|> "book" :> Capture "isbn" Isbn :> Get '[JSON] Book
        -- PUT /book/:isbn
   :<|> "book" :> Capture "isbn" Isbn :> Put '[JSON] Book
-  :<|> "search" :> QueryParam "title" T.Text :> Get '[JSON] [Book]
+       -- GET /search?title=...&summary=...
+  :<|> "search" :> QueryParam "title" T.Text :> QueryParam "summary" T.Text :> Get '[JSON] [Book]
   :<|> EmptyAPI
 
 data ServerConfig = ServerConfig {
@@ -48,11 +49,15 @@ data ServerConfig = ServerConfig {
 
 type AppMonad = ReaderT ServerConfig Handler
 
+orElse :: Maybe a -> a -> a
+orElse Nothing a  = a
+orElse (Just a) _ = a
+
 _buildError :: ServerError -> String -> ServerError
 _buildError baseError msg = baseError { errBody = encode $ object ["error" .= msg]}
 
 server :: ServerT BookApi AppMonad
-server = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> booksByTitle :<|> emptyServer
+server = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> searchBooks :<|> emptyServer
   where
     bookDir :: AppMonad FilePath
     bookDir = serverDataDir <$> ask
@@ -73,12 +78,24 @@ server = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> booksByTitle :<|> empt
         Nothing     -> throwError $ _buildError err404 "Book not found"
         (Just book) -> return book
 
-    booksByTitle :: Maybe T.Text -> AppMonad [Book]
-    booksByTitle Nothing              = allBooks
-    booksByTitle (Just titleFragment) = filter predicate <$> allBooks
+    searchBooks :: Maybe T.Text -> Maybe T.Text -> AppMonad [Book]
+    searchBooks titleFragment summaryFragment = do
+      books <- allBooks
+      let predicate b = booksByTitle titleFragment b && booksBySummary summaryFragment b
+      return $ filter predicate books
+
+    booksByTitle :: Maybe T.Text -> Book -> Bool
+    booksByTitle Nothing              _    = True
+    booksByTitle (Just titleFragment) book = loweredFragment `T.isInfixOf` T.toLower (_title book)
       where
-        predicate :: Book -> Bool
-        predicate book = titleFragment `T.isInfixOf` _title book
+        loweredFragment = T.toLower titleFragment
+
+    booksBySummary :: Maybe T.Text -> Book -> Bool
+    booksBySummary Nothing                _    = True
+    booksBySummary (Just summaryFragment) book = orElse checkSummary False
+      where
+        loweredFragment = T.toLower summaryFragment
+        checkSummary = (loweredFragment `T.isInfixOf`) . T.toLower <$> _summary book
 
     addBookByIsbn :: Isbn -> AppMonad Book
     addBookByIsbn isbn = do
