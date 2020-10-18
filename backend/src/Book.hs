@@ -29,6 +29,14 @@ data Isbn
   | Isbn13 [Int]
   deriving (Generic)
 
+instance A.ToJSON Isbn where
+  toJSON isbn = A.toJSON $ show isbn
+instance A.FromJSON Isbn where
+  parseJSON = A.withText "isbn string" $ \isbnString -> do
+    case isbnFromString (T.unpack isbnString) of
+      (Right isbn)  -> pure isbn
+      (Left errors) -> fail $ intercalate ", " $ map show errors
+
 instance Show Isbn where
   show (Isbn10 numbers) = map isbnIntToDigit numbers
     where
@@ -42,7 +50,7 @@ mapLeft _ (Right x) = Right x
 
 instance FromHttpApiData Isbn where
   -- parseUrlPiece :: T.Text -> Either T.Text a
-  parseUrlPiece text = mapLeft (T.pack . concatMap show) $ isbnFromString $ T.unpack text
+  parseUrlPiece text = mapLeft (T.pack . intercalate ", " . map show) $ isbnFromString $ T.unpack text
 
 data IsbnParseError
    = InvalidLength
@@ -102,14 +110,6 @@ data Book = Book
   , _language  :: Maybe String
   , _crawledBy :: String
   } deriving (Generic, Show)
-
-instance A.ToJSON Isbn where
-  toJSON isbn = A.toJSON $ show isbn
-instance A.FromJSON Isbn where
-  parseJSON = A.withText "isbn string" $ \isbnString -> do
-    case isbnFromString (T.unpack isbnString) of
-      (Right isbn)  -> pure isbn
-      (Left errors) -> fail $ intercalate ", " $ map show errors
 
 instance A.ToJSON Book where
   toEncoding = A.genericToEncoding A.defaultOptions

@@ -13,20 +13,19 @@ module Webserver.Server
   , bookApi
   , app
   , main
+  , ServerConfig
   )
   where
 
 import           Book
 import           Control.Monad.IO.Class
 import           Data.Aeson
-import qualified Data.ByteString.Lazy.Char8 as BS
 import           Data.Proxy
 import           Network.Wai
 import           Network.Wai.Handler.Warp
 import           Scraping.GoodreadsScraper
 import           Servant
 import           Storage
-
 
 type BookApi =
        -- GET /books
@@ -36,18 +35,27 @@ type BookApi =
   :<|> "book" :> Capture "isbn" Isbn :> Put '[JSON] Book
   :<|> EmptyAPI
 
-server :: Server BookApi
-server = books :<|> bookByIsbn :<|> addBookByIsbn :<|> emptyServer
+data ServerConfig = ServerConfig {
+  serverDataDir :: FilePath
+} deriving (Show)
+
+_buildError :: ServerError -> String -> ServerError
+_buildError baseError msg = baseError { errBody = encode $ object ["error" .= msg]}
+
+server :: ServerConfig -> Server BookApi
+server config = books :<|> bookByIsbn :<|> addBookByIsbn :<|> emptyServer
   where
+    bookDir = serverDataDir config
+
     books :: Handler [Book]
-    books = liftIO $ listAllBooks "/tmp/test"
+    books = liftIO $ listAllBooks bookDir
 
     bookByIsbn :: Isbn -> Handler Book
     bookByIsbn isbn = do
-      maybeBook <- liftIO $ loadBook "/tmp/test" isbn
+      maybeBook <- liftIO $ loadBook bookDir isbn
 
       case maybeBook of
-        (Left err) -> throwError $ err404 { errBody = BS.pack err }
+        (Left err)   -> throwError $ _buildError err404 err
         (Right book) -> return book
 
     addBookByIsbn :: Isbn -> Handler Book
@@ -55,12 +63,12 @@ server = books :<|> bookByIsbn :<|> addBookByIsbn :<|> emptyServer
       crawlResult <- liftIO $ scrapeGoodreads isbn
 
       case crawlResult of
-        Nothing -> throwError $ err404 { errBody = "Book not found :/" }
+        Nothing -> throwError $ _buildError err404 "Book not found :/"
         (Just result) -> do
           case _coverImage result of
-            (Just url) -> do liftIO $ storeCover "/tmp/test" isbn url
+            (Just url) -> do liftIO $ storeCover bookDir isbn url
             Nothing    -> pure ()
-          liftIO $ storeBook "/tmp/test" (_book result)
+          liftIO $ storeBook bookDir (_book result)
           return (_book result)
 
 
@@ -68,7 +76,9 @@ bookApi :: Proxy BookApi
 bookApi = Proxy
 
 app :: Application
-app = serveWithContext bookApi (customFormatters :. EmptyContext) server
+app = serveWithContext bookApi (customFormatters :. EmptyContext) $ server $ ServerConfig
+  { serverDataDir = "/tmp/test"
+  }
 
 main :: IO ()
 main = run 8081 app
