@@ -32,27 +32,27 @@ _goodreadsScraper isbn = CrawlResult <$> book <*> optional coverImageUrl
       <*> optional language
       <*> pure "Goodreads"
 
-    title :: Scraper T.Text String
-    title = chroot (AnyTag @: ["id" @= "bookTitle"]) $ T.unpack . T.strip <$> text anySelector
+    title :: Scraper T.Text T.Text
+    title = chroot (AnyTag @: ["id" @= "bookTitle"]) $ T.strip <$> text anySelector
 
     pages :: Scraper T.Text Int
     pages = chroot (AnyTag @: ["itemprop" @= "numberOfPages"]) $ do
       string <- filter isDigit . T.unpack . T.strip <$> text anySelector
       return $ read string
 
-    language :: Scraper T.Text String
+    language :: Scraper T.Text T.Text
     language = chroot (AnyTag @: ["itemprop" @= "inLanguage"]) $
-      T.unpack . T.strip <$> text anySelector
+      T.strip <$> text anySelector
 
-    description :: Scraper T.Text String
+    description :: Scraper T.Text T.Text
     description = chroot (AnyTag @: ["id" @= "description"] // "span") $ do
       pos <- position
       guard $ pos == 1
-      T.unpack . T.strip <$> text anySelector
+      T.strip <$> text anySelector
 
-    authors :: Scraper T.Text [String]
+    authors :: Scraper T.Text [T.Text]
     authors = chroots (AnyTag @: [hasClass "authorName", notP (hasClass "role")]) $
-      T.unpack . T.strip <$> text anySelector
+      T.strip <$> text anySelector
 
     coverImageUrl :: Scraper T.Text String
     coverImageUrl = chroot (AnyTag @: ["id" @= "coverImage"]) $

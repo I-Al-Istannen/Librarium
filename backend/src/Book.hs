@@ -108,13 +108,13 @@ toIsbn13 (Isbn10 numbers) = let
 toIsbn13 isbn             = isbn
 
 data Book = Book
-  { _title     :: String
+  { _title     :: T.Text
   , _isbn      :: Isbn
-  , _author    :: [String]
-  , _summary   :: Maybe String
+  , _author    :: [T.Text]
+  , _summary   :: Maybe T.Text
   , _pages     :: Maybe Int
-  , _language  :: Maybe String
-  , _crawledBy :: String
+  , _language  :: Maybe T.Text
+  , _crawledBy :: T.Text
   } deriving (Generic, Show)
 
 instance A.ToJSON Book where

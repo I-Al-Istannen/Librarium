@@ -78,7 +78,7 @@ server = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> booksByTitle :<|> empt
     booksByTitle (Just titleFragment) = filter predicate <$> allBooks
       where
         predicate :: Book -> Bool
-        predicate book = titleFragment `T.isInfixOf` T.pack (_title book)
+        predicate book = titleFragment `T.isInfixOf` _title book
 
     addBookByIsbn :: Isbn -> AppMonad Book
     addBookByIsbn isbn = do
