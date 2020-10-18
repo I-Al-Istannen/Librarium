@@ -22,6 +22,7 @@ import           Control.Concurrent
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
+import qualified Data.ByteString            as BS
 import qualified Data.Map                   as Map
 import           Data.Proxy
 import qualified Data.Text                  as T
@@ -38,7 +39,9 @@ type BookApi =
   :<|> "book" :> Capture "isbn" Isbn :> Get '[JSON] Book
        -- PUT /book/:isbn
   :<|> "book" :> Capture "isbn" Isbn :> Put '[JSON] Book
-       -- GET /search?title=...&summary=...
+         -- GET /book/:isbn/cover
+  :<|> "book" :> Capture "isbn" Isbn :> "cover" :> Get '[OctetStream] BS.ByteString
+         -- GET /search?title=...&summary=...
   :<|> "search" :> QueryParam "title" T.Text :> QueryParam "summary" T.Text :> Get '[JSON] [Book]
   :<|> EmptyAPI
 
@@ -57,7 +60,7 @@ _buildError :: ServerError -> String -> ServerError
 _buildError baseError msg = baseError { errBody = encode $ object ["error" .= msg]}
 
 server :: ServerT BookApi AppMonad
-server = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> searchBooks :<|> emptyServer
+server = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> coverByIsbn :<|> searchBooks :<|> emptyServer
   where
     bookDir :: AppMonad FilePath
     bookDir = serverDataDir <$> ask
@@ -77,6 +80,15 @@ server = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> searchBooks :<|> empty
       case maybeBook of
         Nothing     -> throwError $ _buildError err404 "Book not found"
         (Just book) -> return book
+
+    coverByIsbn :: Isbn -> AppMonad BS.ByteString
+    coverByIsbn isbn = do
+      dir <- bookDir
+      coverMaybe <- liftIO $ loadCover dir isbn
+
+      case coverMaybe of
+        Nothing   -> throwError $ _buildError err404 "Book not found"
+        (Just bs) -> return bs
 
     searchBooks :: Maybe T.Text -> Maybe T.Text -> AppMonad [Book]
     searchBooks titleFragment summaryFragment = do

@@ -6,6 +6,7 @@ module Storage
   , listAllIsbns
   , listAllBooks
   , storeCover
+  , loadCover
   ) where
 
 import           Book
@@ -67,5 +68,17 @@ storeCover directory isbn url = do
   BS.writeFile filePath body
 
   return ()
+  where
+    filePath = _isbnToPath directory ".img" isbn
+
+loadCover :: FilePath -> Isbn -> IO (Maybe BS.ByteString)
+loadCover directory isbn = do
+  fileExists <- doesFileExist filePath
+
+  if fileExists then do
+    val <- BS.readFile filePath
+    return $ Just val
+  else
+    return Nothing
   where
     filePath = _isbnToPath directory ".img" isbn
