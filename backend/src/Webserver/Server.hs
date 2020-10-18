@@ -23,6 +23,8 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
 import qualified Data.ByteString            as BS
+import qualified Data.ByteString.Char8      as BSC
+import           Data.List
 import qualified Data.Map                   as Map
 import           Data.Proxy
 import qualified Data.Text                  as T
@@ -32,22 +34,25 @@ import           Scraping.GoodreadsScraper
 import           Servant
 import           Storage
 
-type BookApi =
+type UnsecureBookApi =
        -- GET /books
        "books" :> Get '[JSON] [Book]
        -- GET /book/:isbn
   :<|> "book" :> Capture "isbn" Isbn :> Get '[JSON] Book
        -- PUT /book/:isbn
   :<|> "book" :> Capture "isbn" Isbn :> Put '[JSON] Book
-         -- GET /book/:isbn/cover
+       -- GET /book/:isbn/cover
   :<|> "book" :> Capture "isbn" Isbn :> "cover" :> Get '[OctetStream] BS.ByteString
-         -- GET /search?title=...&summary=...
+       -- GET /search?title=...&summary=...
   :<|> "search" :> QueryParam "title" T.Text :> QueryParam "summary" T.Text :> Get '[JSON] [Book]
   :<|> EmptyAPI
 
-data ServerConfig = ServerConfig {
-  serverDataDir :: FilePath,
-  serverBooks   :: MVar (Map.Map Isbn Book)
+type BookApi = BasicAuth "librarium" User :> UnsecureBookApi
+
+data ServerConfig = ServerConfig
+ { serverDataDir :: FilePath
+ , serverUsers   :: [(String, String)]
+ , serverBooks   :: MVar (Map.Map Isbn Book)
 }
 
 type AppMonad = ReaderT ServerConfig Handler
@@ -60,7 +65,7 @@ _buildError :: ServerError -> String -> ServerError
 _buildError baseError msg = baseError { errBody = encode $ object ["error" .= msg]}
 
 server :: ServerT BookApi AppMonad
-server = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> coverByIsbn :<|> searchBooks :<|> emptyServer
+server _ = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> coverByIsbn :<|> searchBooks :<|> emptyServer
   where
     bookDir :: AppMonad FilePath
     bookDir = serverDataDir <$> ask
@@ -137,23 +142,54 @@ server = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> coverByIsbn :<|> searc
 bookApi :: Proxy BookApi
 bookApi = Proxy
 
+apiContextProxy :: Proxy (ErrorFormatter ': BasicAuthCheck User ': '[])
+apiContextProxy = Proxy
+
 _runReader :: ServerConfig -> AppMonad a -> Handler a
 _runReader s x = runReaderT x s
 
 app :: ServerConfig -> Application
-app config = serveWithContext bookApi (customFormatters :. EmptyContext) $ hoistServer bookApi (_runReader config) server
+app config = serveWithContext bookApi
+  (customFormatters :. basicAuthServerContext config)
+  $ hoistServerWithContext bookApi apiContextProxy (_runReader config) server
 
 
 main :: IO ()
 main = do
   initialBooks <- newEmptyMVar
-  let config = ServerConfig { serverDataDir = "/tmp/test", serverBooks = initialBooks }
+  let config = ServerConfig {
+     serverDataDir = "/tmp/test",
+     serverBooks = initialBooks,
+     serverUsers = [("John", "Doe")]
+  }
 
   allBooks <- listAllBooks $ serverDataDir config
   let bookMap = map (\b -> (_isbn b, b)) allBooks
   putMVar initialBooks $ Map.fromList bookMap
 
   run 8081 (app config)
+
+newtype User = User { userName :: String } deriving (Show)
+
+authCheck :: ServerConfig -> BasicAuthCheck User
+authCheck config =
+  let check (BasicAuthData username password) =
+        if orElse (passwordMatches (username, password)) False
+        then return $ Authorized $ User $ BSC.unpack username
+        else return Unauthorized
+  in BasicAuthCheck check
+  where
+    users :: [(String, String)]
+    users = serverUsers config
+
+    getPassword :: BSC.ByteString -> Maybe BSC.ByteString
+    getPassword name = BSC.pack . snd <$> find ((==name) . BSC.pack . fst) users
+
+    passwordMatches :: (BSC.ByteString, BSC.ByteString) -> Maybe Bool
+    passwordMatches (user, password) = (== password) <$> getPassword user
+
+basicAuthServerContext :: ServerConfig -> Context (BasicAuthCheck User ': '[])
+basicAuthServerContext config = authCheck config :. EmptyContext
 
 customFormatter :: ErrorFormatter
 customFormatter tr _ err =
