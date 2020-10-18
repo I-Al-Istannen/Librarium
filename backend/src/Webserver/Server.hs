@@ -18,13 +18,13 @@ module Webserver.Server
   where
 
 import           Book
-import           Control.Concurrent.STM.TVar
+import           Control.Concurrent
 import           Control.Monad.IO.Class
-import           Control.Monad.STM           (atomically)
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
 import           Data.List
 import           Data.Proxy
+import qualified Data.Text                  as T
 import           Network.Wai
 import           Network.Wai.Handler.Warp
 import           Scraping.GoodreadsScraper
@@ -38,11 +38,12 @@ type BookApi =
   :<|> "book" :> Capture "isbn" Isbn :> Get '[JSON] Book
        -- PUT /book/:isbn
   :<|> "book" :> Capture "isbn" Isbn :> Put '[JSON] Book
+  :<|> "search" :> QueryParam "title" T.Text :> Get '[JSON] [Book]
   :<|> EmptyAPI
 
 data ServerConfig = ServerConfig {
   serverDataDir :: FilePath,
-  serverBooks   :: TVar [Book]
+  serverBooks   :: MVar [Book]
 }
 
 type AppMonad = ReaderT ServerConfig Handler
@@ -51,7 +52,7 @@ _buildError :: ServerError -> String -> ServerError
 _buildError baseError msg = baseError { errBody = encode $ object ["error" .= msg]}
 
 server :: ServerT BookApi AppMonad
-server = books :<|> bookByIsbn :<|> addBookByIsbn :<|> emptyServer
+server = books :<|> bookByIsbn :<|> addBookByIsbn :<|> booksByTitle :<|> emptyServer
   where
     bookDir :: AppMonad FilePath
     bookDir = serverDataDir <$> ask
@@ -59,7 +60,7 @@ server = books :<|> bookByIsbn :<|> addBookByIsbn :<|> emptyServer
     books :: AppMonad [Book]
     books = do
       ServerConfig{serverBooks = allBooks} <- ask
-      liftIO $ readTVarIO allBooks
+      liftIO $ readMVar allBooks
 
     bookByIsbn :: Isbn -> AppMonad Book
     bookByIsbn isbn = do
@@ -68,6 +69,13 @@ server = books :<|> bookByIsbn :<|> addBookByIsbn :<|> emptyServer
       case maybeBook of
         Nothing     -> throwError $ _buildError err404 "Book not found"
         (Just book) -> return book
+
+    booksByTitle :: Maybe T.Text -> AppMonad [Book]
+    booksByTitle Nothing              = books
+    booksByTitle (Just titleFragment) = filter predicate <$> books
+      where
+        predicate :: Book -> Bool
+        predicate book = titleFragment `T.isInfixOf` T.pack (_title book)
 
     addBookByIsbn :: Isbn -> AppMonad Book
     addBookByIsbn isbn = do
@@ -91,11 +99,10 @@ server = books :<|> bookByIsbn :<|> addBookByIsbn :<|> emptyServer
       liftIO $ storeBook dir book
 
       ServerConfig{serverBooks = books} <- ask
-      liftIO $ atomically $ readTVar books >>= writeTVar books . insertReplace book
+      liftIO $ modifyMVar_ books (pure . insertReplace book)
       where
         insertReplace :: Book -> [Book] -> [Book]
         insertReplace book books = book : filter ( (_isbn book /=) . _isbn) books
-
 
 
 bookApi :: Proxy BookApi
@@ -110,11 +117,11 @@ app config = serveWithContext bookApi (customFormatters :. EmptyContext) $ hoist
 
 main :: IO ()
 main = do
-  initialBooks <- newTVarIO []
+  initialBooks <- newEmptyMVar
   let config = ServerConfig { serverDataDir = "/tmp/test", serverBooks = initialBooks }
 
   allBooks <- listAllBooks $ serverDataDir config
-  atomically $ writeTVar initialBooks allBooks
+  putMVar initialBooks allBooks
 
   run 8081 (app config)
 
