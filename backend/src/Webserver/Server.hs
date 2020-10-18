@@ -19,6 +19,7 @@ module Webserver.Server
 
 import           Book
 import           Control.Concurrent
+import           Control.Monad              (guard)
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
@@ -33,6 +34,7 @@ import           Network.Wai.Handler.Warp
 import           Scraping.GoodreadsScraper
 import           Servant
 import           Storage
+import           System.Environment
 
 type UnsecureBookApi =
        -- GET /books
@@ -156,11 +158,16 @@ app config = serveWithContext bookApi
 
 main :: IO ()
 main = do
+  arguments <- getArgs
+  guard $ length arguments == 3
+  let dataDir = head arguments
+  let user = (arguments !! 1, arguments !! 2)
+
   initialBooks <- newEmptyMVar
   let config = ServerConfig {
-     serverDataDir = "/tmp/test",
+     serverDataDir = dataDir,
      serverBooks = initialBooks,
-     serverUsers = [("John", "Doe")]
+     serverUsers = [user]
   }
 
   allBooks <- listAllBooks $ serverDataDir config
