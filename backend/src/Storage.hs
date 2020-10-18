@@ -19,15 +19,15 @@ import           System.Directory
 
 type Url = String
 
-_isbnToPath :: FilePath -> Isbn -> FilePath
-_isbnToPath directory isbn = let
-    fileName = show (toIsbn13 isbn) ++ ".json"
+_isbnToPath :: FilePath -> String -> Isbn -> FilePath
+_isbnToPath directory suffix isbn = let
+    fileName = show (toIsbn13 isbn) ++ suffix
     filePath = directory ++ "/" ++ fileName
   in filePath
 
 loadBook :: FilePath -> Isbn -> IO (Either String Book)
 loadBook directory isbn = do
-  fileContent <- readFile $ _isbnToPath directory isbn
+  fileContent <- readFile $ _isbnToPath directory ".json" isbn
   return $ jsonToBook (T.pack fileContent)
 
 storeBook :: FilePath -> Book -> IO ()
@@ -35,7 +35,7 @@ storeBook directory book = do
   writeFile filePath $ T.unpack $ bookToJson book
   return ()
   where
-    filePath = _isbnToPath directory (_isbn book)
+    filePath = _isbnToPath directory ".json" (_isbn book)
 
 listAllIsbns :: FilePath -> IO [Isbn]
 listAllIsbns directory = do
@@ -55,8 +55,8 @@ listAllBooks directory = do
 
   return $ rights books
 
-storeCover :: FilePath -> Url -> Isbn -> IO ()
-storeCover directory url isbn = do
+storeCover :: FilePath -> Isbn -> Url -> IO ()
+storeCover directory isbn url = do
   request <- parseRequest url
   response <- httpBS request
 
@@ -68,4 +68,4 @@ storeCover directory url isbn = do
 
   return ()
   where
-    filePath = _isbnToPath directory isbn
+    filePath = _isbnToPath directory ".img" isbn

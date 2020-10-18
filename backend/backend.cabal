@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c402222c49bd641d510676a70b5df0c5afc5c5a1bf74ac65f18d4b84ccb8ebf2
+-- hash: b697936e0d8a85caa7d3d585831889565437c6102d96e2f23dfcc8bd9487470c
 
 name:           backend
 version:        0.1.0.0
@@ -26,6 +26,7 @@ library
       Book
       Scraping.GoodreadsScraper
       Storage
+      Webserver.Server
   other-modules:
       Paths_backend
   hs-source-dirs:
@@ -38,8 +39,12 @@ library
     , http-client
     , http-conduit
     , scalpel
+    , servant
+    , servant-server >=0.18
     , text
     , transformers
+    , wai
+    , warp
   default-language: Haskell2010
 
 executable backend-exe
@@ -58,6 +63,10 @@ executable backend-exe
     , http-client
     , http-conduit
     , scalpel
+    , servant
+    , servant-server >=0.18
     , text
     , transformers
+    , wai
+    , warp
   default-language: Haskell2010

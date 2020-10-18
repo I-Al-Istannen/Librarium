@@ -9,6 +9,7 @@ module Book
   , jsonToBook
   , bookToJson
   , example
+  , mapLeft
   ) where
 
 import           Control.Applicative
@@ -21,6 +22,7 @@ import           Data.Maybe
 import qualified Data.Text                  as T
 import qualified Data.Text.Encoding         as T
 import           GHC.Generics
+import           Servant
 
 data Isbn
   = Isbn10 [Int]
@@ -33,6 +35,14 @@ instance Show Isbn where
       isbnIntToDigit 10 = 'X'
       isbnIntToDigit a  = intToDigit a
   show (Isbn13 numbers) = map intToDigit numbers
+
+mapLeft :: (a -> c) -> Either a b -> Either c b
+mapLeft f (Left x)  = Left $ f x
+mapLeft _ (Right x) = Right x
+
+instance FromHttpApiData Isbn where
+  -- parseUrlPiece :: T.Text -> Either T.Text a
+  parseUrlPiece text = mapLeft (T.pack . concatMap show) $ isbnFromString $ T.unpack text
 
 data IsbnParseError
    = InvalidLength

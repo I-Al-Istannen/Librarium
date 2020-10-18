@@ -21,8 +21,12 @@ dependencies:
 - http-client
 - http-conduit
 - scalpel
+- servant
+- servant-server >= 0.18
 - text
 - transformers
+- wai
+- warp
 
 library:
   source-dirs: src
