@@ -114,6 +114,7 @@ data Book = Book
   , _summary   :: Maybe T.Text
   , _pages     :: Maybe Int
   , _language  :: Maybe T.Text
+  , _location  :: Maybe T.Text
   , _crawledBy :: T.Text
   } deriving (Generic, Show)
 

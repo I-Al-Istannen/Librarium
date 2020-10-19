@@ -19,7 +19,7 @@ module Webserver.Server
 
 import           Book
 import           Control.Concurrent
-import           Control.Monad              (guard)
+import           Control.Monad              (filterM, guard)
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
@@ -45,8 +45,12 @@ type UnsecureBookApi =
   :<|> "book" :> Capture "isbn" Isbn :> Put '[JSON] Book
        -- GET /book/:isbn/cover
   :<|> "book" :> Capture "isbn" Isbn :> "cover" :> Get '[OctetStream] BS.ByteString
-       -- GET /search?title=...&summary=...
-  :<|> "search" :> QueryParam "title" T.Text :> QueryParam "summary" T.Text :> Get '[JSON] [Book]
+       -- GET /search?title=...&summary=...&location=...
+  :<|> "search"
+    :> QueryParam "title" T.Text
+    :> QueryParam "summary" T.Text
+    :> QueryParam "location" T.Text
+    :> Get '[JSON] [Book]
   :<|> EmptyAPI
 
 type BookApi = BasicAuth "librarium" User :> UnsecureBookApi
@@ -97,11 +101,17 @@ server _ = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> coverByIsbn :<|> sea
         Nothing   -> throwError $ _buildError err404 "Book not found"
         (Just bs) -> return bs
 
-    searchBooks :: Maybe T.Text -> Maybe T.Text -> AppMonad [Book]
-    searchBooks titleFragment summaryFragment = do
+    searchBooks :: Maybe T.Text -> Maybe T.Text -> Maybe T.Text -> AppMonad [Book]
+    searchBooks titleFragment summaryFragment locationFragment = do
       books <- allBooks
-      let predicate b = booksByTitle titleFragment b && booksBySummary summaryFragment b
+      let predicate b = all (\ p -> p b) predicates
       return $ filter predicate books
+      where
+        predicates =
+          [ booksByTitle titleFragment
+          , booksBySummary summaryFragment
+          , booksByLocation locationFragment
+          ]
 
     booksByTitle :: Maybe T.Text -> Book -> Bool
     booksByTitle Nothing              _    = True
@@ -115,6 +125,10 @@ server _ = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> coverByIsbn :<|> sea
       where
         loweredFragment = T.toLower summaryFragment
         checkSummary = (loweredFragment `T.isInfixOf`) . T.toLower <$> _summary book
+
+    booksByLocation :: Maybe T.Text -> Book -> Bool
+    booksByLocation Nothing  _           = True
+    booksByLocation (Just location) book = Just location == _location book
 
     addBookByIsbn :: Isbn -> AppMonad Book
     addBookByIsbn isbn = do

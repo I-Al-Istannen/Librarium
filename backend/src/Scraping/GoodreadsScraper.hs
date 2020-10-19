@@ -30,6 +30,7 @@ _goodreadsScraper isbn = CrawlResult <$> book <*> optional coverImageUrl
       <*> optional description
       <*> optional pages
       <*> optional language
+      <*> pure Nothing
       <*> pure "Goodreads"
 
     title :: Scraper T.Text T.Text
