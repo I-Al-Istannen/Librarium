@@ -19,7 +19,7 @@ module Webserver.Server
 
 import           Book
 import           Control.Concurrent
-import           Control.Monad              (filterM, guard)
+import           Control.Monad              (guard)
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
@@ -27,6 +27,7 @@ import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Char8      as BSC
 import           Data.List
 import qualified Data.Map                   as Map
+import           Data.Maybe                 (mapMaybe)
 import           Data.Proxy
 import qualified Data.Text                  as T
 import           Network.Wai
@@ -45,12 +46,17 @@ type UnsecureBookApi =
   :<|> "book" :> Capture "isbn" Isbn :> Put '[JSON] Book
        -- GET /book/:isbn/cover
   :<|> "book" :> Capture "isbn" Isbn :> "cover" :> Get '[OctetStream] BS.ByteString
+       -- PUT /book/:isbn/location [Body=location name]
+  :<|> "book" :> Capture "isbn" Isbn :> "location" :> ReqBody '[PlainText] T.Text :> Put '[JSON] Book
+       -- PUT /book/:isbn/location [Body=location name]
+  :<|> "book" :> Capture "isbn" Isbn :> "location" :> Delete '[JSON] Book
        -- GET /search?title=...&summary=...&location=...
   :<|> "search"
     :> QueryParam "title" T.Text
     :> QueryParam "summary" T.Text
     :> QueryParam "location" T.Text
     :> Get '[JSON] [Book]
+  :<|> "location" :> Get '[JSON] [T.Text]
   :<|> EmptyAPI
 
 type BookApi = BasicAuth "librarium" User :> UnsecureBookApi
@@ -71,7 +77,12 @@ _buildError :: ServerError -> String -> ServerError
 _buildError baseError msg = baseError { errBody = encode $ object ["error" .= msg]}
 
 server :: ServerT BookApi AppMonad
-server _ = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> coverByIsbn :<|> searchBooks :<|> emptyServer
+server _ = allBooks
+  :<|> bookByIsbn :<|> addBookByIsbn :<|> coverByIsbn
+  :<|> addOrOverwriteBookLocation :<|> deleteBookLocation
+  :<|> searchBooks
+  :<|> allLocations
+  :<|> emptyServer
   where
     bookDir :: AppMonad FilePath
     bookDir = serverDataDir <$> ask
@@ -101,6 +112,23 @@ server _ = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> coverByIsbn :<|> sea
         Nothing   -> throwError $ _buildError err404 "Book not found"
         (Just bs) -> return bs
 
+    addOrOverwriteBookLocation :: Isbn -> T.Text -> AppMonad Book
+    addOrOverwriteBookLocation isbn location = setBookLocation isbn (Just location)
+
+    deleteBookLocation :: Isbn -> AppMonad Book
+    deleteBookLocation isbn = setBookLocation isbn Nothing
+
+    setBookLocation :: Isbn -> Maybe T.Text -> AppMonad Book
+    setBookLocation isbn location = do
+      book <- bookByIsbn isbn
+      let updatedBook = book { _location = location }
+      addBook updatedBook Nothing
+
+      return updatedBook
+
+    allLocations :: AppMonad [T.Text]
+    allLocations = mapMaybe _location <$> allBooks
+
     searchBooks :: Maybe T.Text -> Maybe T.Text -> Maybe T.Text -> AppMonad [Book]
     searchBooks titleFragment summaryFragment locationFragment = do
       books <- allBooks
@@ -128,7 +156,10 @@ server _ = allBooks :<|> bookByIsbn :<|> addBookByIsbn :<|> coverByIsbn :<|> sea
 
     booksByLocation :: Maybe T.Text -> Book -> Bool
     booksByLocation Nothing  _           = True
-    booksByLocation (Just location) book = Just location == _location book
+    booksByLocation (Just location) book = orElse checkLocation False
+      where
+        loweredFragment = T.toLower location
+        checkLocation = (loweredFragment `T.isInfixOf`) . T.toLower <$> _location book
 
     addBookByIsbn :: Isbn -> AppMonad Book
     addBookByIsbn isbn = do
