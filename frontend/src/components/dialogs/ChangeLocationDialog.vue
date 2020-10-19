@@ -2,13 +2,23 @@
   <v-dialog v-model="locationEditDialogOpen" width="700">
     <v-card>
       <v-card-title>
-        <v-toolbar dark color="primary">Change location</v-toolbar>
+        <v-toolbar dark color="primary">Ändere den Ort</v-toolbar>
       </v-card-title>
       <v-card-text>
-        <v-text-field
+        <v-combobox
           v-model="currentEditingLocation"
-          label="Location..."
-        ></v-text-field>
+          :items="allLocations"
+          chips
+          label="Ort"
+          prepend-icon="mdi-bookshelf"
+          placeholder="Enter your own"
+        >
+          <template v-slot:selection="{ attrs, item, select, selected }">
+            <v-chip v-bind="attrs" :input-value="selected" @click="select">
+              {{ item }}
+            </v-chip>
+          </template>
+        </v-combobox>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
@@ -39,12 +49,17 @@ export default class ChangeLocationDialog extends Vue {
   private onBookChange() {
     this.locationEditDialogOpen = !!this.book
     if (this.book) {
+      vxm.books.fetchAllLocations()
       this.currentEditingLocation = this.book.location
     }
   }
 
   private closeDialog() {
     this.$emit('close')
+  }
+
+  private get allLocations() {
+    return vxm.books.locations
   }
 
   private async changeLocation() {

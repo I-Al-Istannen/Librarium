@@ -11,6 +11,7 @@ const VxModule = createModule({
 
 export class BookStore extends VxModule {
   private _books: Book[] = []
+  private _locations: string[] = []
 
   @action
   async fetchBooks(filter: {
@@ -47,6 +48,13 @@ export class BookStore extends VxModule {
   }
 
   @action
+  async fetchAllLocations() {
+    const response = await axios.get('/location')
+
+    this._locations = response.data
+  }
+
+  @action
   async fetchCover(isbn: string) {
     const response = await axios.get(`/book/${isbn}/cover`, {
       responseType: 'blob'
@@ -80,5 +88,9 @@ export class BookStore extends VxModule {
 
   get books() {
     return this._books
+  }
+
+  get locations() {
+    return this._locations
   }
 }
