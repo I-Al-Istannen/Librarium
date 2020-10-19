@@ -17,16 +17,14 @@ main = do
   let dataDir = head arguments
   let user = (arguments !! 1, arguments !! 2)
 
-  initialBooks <- newEmptyMVar
+  allBooks <- listAllBooks dataDir
+  let bookMap = map (\b -> (_isbn b, b)) allBooks
+  initialBooks <- newMVar $ Map.fromList bookMap
   let config = ServerConfig {
      serverDataDir = dataDir,
      serverBooks = initialBooks,
      serverUsers = [user]
   }
-
-  allBooks <- listAllBooks $ serverDataDir config
-  let bookMap = map (\b -> (_isbn b, b)) allBooks
-  putMVar initialBooks $ Map.fromList bookMap
 
   withStdoutLogger $ \logger ->
     runSettings (setPort 8081 $ setLogger logger $ defaultSettings) (app config)
