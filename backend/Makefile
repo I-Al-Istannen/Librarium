@@ -2,6 +2,7 @@
 all: build/backend-exe
 
 build: package.yaml $(shell find src -name "*.hs")
+	rm -rf build
 	mkdir build
 	stack build backend
 

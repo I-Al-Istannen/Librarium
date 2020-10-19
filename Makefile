@@ -1,5 +1,7 @@
 all: frontend backend
 
+USER_ID ?= 1003
+
 frontend:
 	echo "#####################"
 	echo "# Building Frontend #"
@@ -15,5 +17,12 @@ backend:
 clean:
 	make -C frontend clean
 	make -C backend clean
+
+docker: backend frontend
+	mkdir -p .docker
+	cp backend/build/backend-exe .docker
+	cp -r frontend/dist .docker
+	cp -r deploy/* .docker
+	(cd .docker && sudo docker build -t librarium:latest --build-arg USER_ID=$(USER_ID) .)
 
 .PHONY: clean frontend backend
