@@ -78,6 +78,7 @@ export default class LoginDialog extends Vue {
     vxm.user
       .login({ user: this.username, password: this.password })
       .then(() => (this.dialogOpen = false))
+      .then(() => this.$globalSnackbar.setSuccess('', 'Login successful'))
   }
 }
 </script>
