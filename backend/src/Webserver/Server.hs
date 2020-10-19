@@ -12,14 +12,12 @@ module Webserver.Server
   ( server
   , bookApi
   , app
-  , main
-  , ServerConfig
+  , ServerConfig(..)
   )
   where
 
 import           Book
 import           Control.Concurrent
-import           Control.Monad               (guard)
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
@@ -31,12 +29,10 @@ import           Data.Maybe                  (mapMaybe)
 import           Data.Proxy
 import qualified Data.Text                   as T
 import           Network.Wai
-import           Network.Wai.Handler.Warp
 import           Network.Wai.Middleware.Cors
 import           Scraping.GoodreadsScraper
 import           Servant
 import           Storage
-import           System.Environment
 
 type UnsecureBookApi =
        -- GET /books
@@ -207,26 +203,6 @@ app config =
            { corsRequestHeaders = [ "Content-Type", "authorization" ]
            , corsMethods = [ "DELETE", "GET", "POST", "PUT" ]
            }
-
-main :: IO ()
-main = do
-  arguments <- getArgs
-  guard $ length arguments == 3
-  let dataDir = head arguments
-  let user = (arguments !! 1, arguments !! 2)
-
-  initialBooks <- newEmptyMVar
-  let config = ServerConfig {
-     serverDataDir = dataDir,
-     serverBooks = initialBooks,
-     serverUsers = [user]
-  }
-
-  allBooks <- listAllBooks $ serverDataDir config
-  let bookMap = map (\b -> (_isbn b, b)) allBooks
-  putMVar initialBooks $ Map.fromList bookMap
-
-  run 8081 (app config)
 
 newtype User = User { userName :: String } deriving (Show)
 

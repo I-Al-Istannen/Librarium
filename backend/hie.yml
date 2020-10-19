@@ -1,0 +1,6 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "backend:lib"
+    - path: "./app"
+      component: "backend:exe:backend-exe"
