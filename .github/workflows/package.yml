@@ -1,0 +1,98 @@
+name: Build, publish and deploy
+
+on: [push]
+
+env:
+  IMAGE_NAME: librarium
+  UID: 1005
+
+jobs:
+  # Build the frontend
+  build-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: '12'
+
+      - name: "Build frontend"
+        run: "make frontend mode=production"
+      - name: "Upload frontend artifacts (aaaaaaah.de)"
+        uses: actions/upload-artifact@v2
+        with:
+          name: frontend-artifacts
+          path: frontend/dist
+
+  # Build the backend
+  build-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-haskell@v1.1
+        with:
+          enable-stack: true
+          stack-version: 'latest'
+
+      - name: "Build backend"
+        run: "make backend"
+
+      - name: "Upload backend/backend artifact"
+        uses: actions/upload-artifact@v2
+        with:
+          name: backend-artifacts
+          path: backend/build/backend-exe
+
+  # Push image to GitHub Packages.
+  push:
+    # Ensure build job passes before pushing image.
+    needs: [build-frontend, build-backend]
+
+    runs-on: ubuntu-latest
+    if: "github.event_name == 'push' && github.ref == 'refs/heads/master'"
+
+    steps:
+      # SETUP
+      - uses: actions/checkout@v2
+
+      # CACHE
+      - name: "Download frontend artifacts"
+        uses: actions/download-artifact@v2
+        with:
+          name: frontend-artifacts
+          path: dist
+      - name: "Download backend artifact"
+        uses: actions/download-artifact@v2
+        with:
+          name: backend-artifacts
+
+      # BUILDING
+      - name: "Build image"
+        run: "make docker USER_ID=$UID --trace"
+
+      - name: "Log into registry"
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: Push image
+        run: |
+          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "master" ] && VERSION=latest
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
