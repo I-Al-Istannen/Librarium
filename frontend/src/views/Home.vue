@@ -7,7 +7,7 @@
             <v-toolbar dark color="primary">Suche Bücher</v-toolbar>
           </v-card-title>
           <v-card-text>
-            <v-row>
+            <v-row @keydown.enter="fetchBooks">
               <v-col>
                 <v-text-field label="ISBN" v-model="searchIsbn"></v-text-field>
               </v-col>

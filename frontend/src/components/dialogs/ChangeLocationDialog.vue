@@ -50,7 +50,7 @@ export default class ChangeLocationDialog extends Vue {
     this.locationEditDialogOpen = !!this.book
     if (this.book) {
       vxm.books.fetchAllLocations()
-      this.currentEditingLocation = this.book.location
+      this.currentEditingLocation = this.book.location || ''
     }
   }
 

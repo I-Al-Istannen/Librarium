@@ -5,7 +5,11 @@
     </v-card-title>
     <v-card-text class="d-flex align-center justify-center">
       <div style="width: 600px">
-        <v-text-field label="Enter Isbn..." v-model="isbn"></v-text-field>
+        <v-text-field
+          @keydown.enter="addBook"
+          label="Enter Isbn..."
+          v-model="isbn"
+        ></v-text-field>
         <v-combobox
           v-model="location"
           :items="allLocations"
@@ -54,6 +58,9 @@ export default class AddBook extends Vue {
   }
 
   private async addBook() {
+    if (!this.isbn) {
+      return
+    }
     this.addBookLoading = true
     try {
       const isbn = this.isbn
