@@ -1,57 +1,82 @@
 <template>
-  <v-data-iterator :items="books" item-key="isbn">
-    <template #default="{ items }">
-      <v-row>
-        <v-col v-for="item in items" :key="item.isbn">
-          <v-card class="ma-5" outlined>
-            <v-card-title>{{ item.title }}</v-card-title>
-            <v-card-subtitle>
-              {{ item.chunkedIsbn }} - {{ item.language }}
-            </v-card-subtitle>
-            <v-card-text>
-              <v-row no-gutters align="center">
-                <v-col cols="auto">
-                  <v-avatar size="125">
-                    <v-tooltip right>
-                      <template #activator="{ on }">
-                        <v-img
-                          v-on="on"
-                          :src="bookUrls[item.isbn]"
-                          contain
-                        ></v-img>
-                      </template>
-                      <img alt="Cover image" :src="bookUrls[item.isbn]" />
-                    </v-tooltip>
-                  </v-avatar>
-                </v-col>
-                <v-col>
-                  {{ item.summary }}
-                </v-col>
-              </v-row>
+  <span>
+    <change-location-dialog
+      :book="currentEditBook"
+      @close="currentEditBook = null"
+    ></change-location-dialog>
+    <v-data-iterator :items="books" item-key="isbn">
+      <template #default="{ items }">
+        <v-row>
+          <v-col v-for="item in items" :key="item.isbn" cols="6" md="6">
+            <v-card class="ma-5" outlined>
+              <v-card-title>{{ item.title }}</v-card-title>
+              <v-card-subtitle>
+                {{ item.chunkedIsbn }} - {{ item.language }}
+              </v-card-subtitle>
+              <v-card-text>
+                <v-row no-gutters align="center">
+                  <v-col cols="auto">
+                    <v-avatar size="125">
+                      <v-tooltip right>
+                        <template #activator="{ on }">
+                          <v-img
+                            v-on="on"
+                            :src="bookUrls[item.isbn]"
+                            contain
+                          ></v-img>
+                        </template>
+                        <img alt="Cover image" :src="bookUrls[item.isbn]" />
+                      </v-tooltip>
+                    </v-avatar>
+                  </v-col>
+                  <v-col>
+                    {{ item.summary }}
+                  </v-col>
+                </v-row>
 
-              <v-row no-gutters justify="space-around">
-                <v-col
-                  cols="auto"
-                  v-for="prop in propertiesForBook(item)"
-                  :key="prop.label"
-                >
-                  <v-card flat>
-                    <v-card-title>
-                      <v-icon left>{{ prop.icon }}</v-icon>
-                      {{ prop.label }}
-                    </v-card-title>
-                    <v-card-subtitle class="pb-0 mb-0">
-                      {{ prop.extraction(item) }}
-                    </v-card-subtitle>
-                  </v-card>
-                </v-col>
-              </v-row>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-    </template>
-  </v-data-iterator>
+                <v-row no-gutters justify="space-around">
+                  <v-col cols="auto">
+                    <v-card flat>
+                      <v-card-title>
+                        <v-icon>{{ locationIcon }}</v-icon>
+                        Ort
+                      </v-card-title>
+                      <v-card-subtitle class="pb-0 mb-0">
+                        <v-chip
+                          outlined
+                          class="py-0 my-0"
+                          @click="currentEditBook = item"
+                        >
+                          {{ item.location || 'Set...' }}
+                          <v-icon right small>{{ changeLocationIcon }}</v-icon>
+                        </v-chip>
+                      </v-card-subtitle>
+                    </v-card>
+                  </v-col>
+
+                  <v-col
+                    cols="auto"
+                    v-for="prop in propertiesForBook(item)"
+                    :key="prop.label"
+                  >
+                    <v-card flat>
+                      <v-card-title>
+                        <v-icon left>{{ prop.icon }}</v-icon>
+                        {{ prop.label }}
+                      </v-card-title>
+                      <v-card-subtitle class="pb-0 mb-0">
+                        {{ prop.extraction(item) }}
+                      </v-card-subtitle>
+                    </v-card>
+                  </v-col>
+                </v-row>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+      </template>
+    </v-data-iterator>
+  </span>
 </template>
 
 <script lang="ts">
@@ -64,44 +89,43 @@ import {
   mdiAccountMultiple,
   mdiBookOpenPageVariantOutline,
   mdiBookshelf,
+  mdiLeadPencil,
   mdiRobot
 } from '@mdi/js'
-
-@Component
+import ChangeLocationDialog from '@/components/dialogs/ChangeLocationDialog.vue'
+@Component({
+  components: { ChangeLocationDialog }
+})
 export default class BookList extends Vue {
   @Prop()
   private books!: Book[]
 
+  private currentEditBook: Book | null = null
   private bookUrls: { [isbn: string]: string | null } = {}
 
   private additionalProperties: {
     label: string
-    predicate: (Book) => boolean
-    extraction: (Book) => boolean
-  } = [
-    {
-      label: 'Ort',
-      icon: mdiBookshelf,
-      predicate: book => book.location,
-      extraction: book => book.location
-    },
+    icon: string
+    predicate: (book: Book) => boolean
+    extraction: (book: Book) => string
+  }[] = [
     {
       label: 'Seiten',
       icon: mdiBookOpenPageVariantOutline,
-      predicate: book => book.pages,
-      extraction: book => book.pages
+      predicate: book => book.pages !== null,
+      extraction: book => '' + book.pages
     },
     {
       label: 'Autoren',
       icon: mdiAccountMultiple,
-      predicate: book => book.author,
-      extraction: book => book.author.join(', ')
+      predicate: book => book.author !== [],
+      extraction: book => book.author!.join(', ')
     },
     {
       label: 'Crawler',
       icon: mdiRobot,
-      predicate: book => book.crawler,
-      extraction: book => book.crawler
+      predicate: book => book.crawler !== null,
+      extraction: book => book.crawler!
     }
   ]
 
@@ -115,9 +139,21 @@ export default class BookList extends Vue {
   }
 
   @Watch('books')
-  private onBooksChanged() {
-    this.bookUrls = {}
-    this.books.forEach(it => this.coverForBook(it))
+  private onBooksChanged(newBooks: Book[], oldBooks: Book[]) {
+    const onlyInOld: Set<string> = new Set(oldBooks.map(it => it.isbn))
+    newBooks.forEach(it => onlyInOld.delete(it.isbn))
+
+    onlyInOld.forEach(it => delete this.bookUrls[it])
+
+    this.books.forEach(it => {
+      if (this.bookUrls[it.isbn] === undefined) {
+        this.coverForBook(it)
+      }
+    })
   }
+
+  // ICONS
+  private locationIcon = mdiBookshelf
+  private changeLocationIcon = mdiLeadPencil
 }
 </script>
