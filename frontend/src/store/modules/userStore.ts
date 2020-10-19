@@ -9,6 +9,7 @@ const VxModule = createModule({
 export class UserStore extends VxModule {
   public user: string | null = null
   public password: string | null = null
+  private _darkThemeSelected: boolean | undefined = undefined
 
   /**
    * Logs the user in.
@@ -44,5 +45,24 @@ export class UserStore extends VxModule {
    */
   get loggedIn(): boolean {
     return this.user !== null && this.password !== null
+  }
+
+  get darkThemeSelected(): boolean {
+    if (this._darkThemeSelected !== undefined) {
+      return this._darkThemeSelected
+    }
+    return this.browserPrefersDarkTheme
+  }
+
+  set darkThemeSelected(selected: boolean) {
+    this._darkThemeSelected = selected
+  }
+
+  get browserPrefersDarkTheme(): boolean {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  }
+
+  get usesBrowsersThemePreferences(): boolean {
+    return this._darkThemeSelected === undefined
   }
 }

@@ -19,19 +19,20 @@ module Webserver.Server
 
 import           Book
 import           Control.Concurrent
-import           Control.Monad              (guard)
+import           Control.Monad               (guard)
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
-import qualified Data.ByteString            as BS
-import qualified Data.ByteString.Char8      as BSC
+import qualified Data.ByteString             as BS
+import qualified Data.ByteString.Char8       as BSC
 import           Data.List
-import qualified Data.Map                   as Map
-import           Data.Maybe                 (mapMaybe)
+import qualified Data.Map                    as Map
+import           Data.Maybe                  (mapMaybe)
 import           Data.Proxy
-import qualified Data.Text                  as T
+import qualified Data.Text                   as T
 import           Network.Wai
 import           Network.Wai.Handler.Warp
+import           Network.Wai.Middleware.Cors
 import           Scraping.GoodreadsScraper
 import           Servant
 import           Storage
@@ -196,10 +197,15 @@ _runReader :: ServerConfig -> AppMonad a -> Handler a
 _runReader s x = runReaderT x s
 
 app :: ServerConfig -> Application
-app config = serveWithContext bookApi
+app config =
+  cors (const $ Just policy) $
+  serveWithContext bookApi
   (customFormatters :. basicAuthServerContext config)
   $ hoistServerWithContext bookApi apiContextProxy (_runReader config) server
-
+  where
+    policy = simpleCorsResourcePolicy
+           { corsRequestHeaders = [ "content-type", "authorization" ]
+           }
 
 main :: IO ()
 main = do

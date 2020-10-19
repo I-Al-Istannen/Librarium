@@ -85,11 +85,11 @@
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
 import Component from 'vue-class-component'
-import { VuetifyIcon } from 'vuetify/types/services/icons'
+import LoginDialog from '../components/LoginDialog.vue'
+import Vue from 'vue'
 import router from '../router'
-import LoginDialog from '../components/dialogs/LoginDialog.vue'
+import { VuetifyIcon } from 'vuetify/types/services/icons'
 import { mdiAccountCircleOutline, mdiLogout } from '@mdi/js'
 import { vxm } from '@/store'
 
@@ -117,10 +117,12 @@ export default class NavigationBar extends Vue {
   private drawerShown = false
 
   get validRoutes(): NavigationItem[] {
-    return router.routes.map(
-      route =>
-        new NavigationItem(route.name!, route.meta.icon, route.meta.label)
-    )
+    return router.routes
+      .filter(route => route.meta.navigable)
+      .map(
+        route =>
+          new NavigationItem(route.name!, route.meta.icon, route.meta.label)
+      )
   }
 
   private get loggedIn(): boolean {

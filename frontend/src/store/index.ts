@@ -12,7 +12,8 @@ export interface RootState {
 Vue.use(Vuex)
 
 const persistence = new VuexPersistence<Partial<RootState>>({
-  storage: window.localStorage
+  storage: window.localStorage,
+  modules: ['user']
 })
 
 export const store = new Vuex.Store({
