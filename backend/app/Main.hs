@@ -5,6 +5,7 @@ import           Control.Concurrent
 import           Control.Monad
 import qualified Data.Map                 as Map
 import           Network.Wai.Handler.Warp
+import           Network.Wai.Logger
 import           Storage
 import           System.Environment
 import           Webserver.Server
@@ -27,4 +28,5 @@ main = do
   let bookMap = map (\b -> (_isbn b, b)) allBooks
   putMVar initialBooks $ Map.fromList bookMap
 
-  run 8081 (app config)
+  withStdoutLogger $ \logger ->
+    runSettings (setPort 8081 $ setLogger logger $ defaultSettings) (app config)

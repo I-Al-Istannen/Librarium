@@ -17,7 +17,8 @@ you have entered previously so you don't have to retype them every time.
    the index.html even if people request `/home`)
 
 #### Backend
-1. `librarium-backend <data directory> <username> <password>` (once I manage to build an executable)
+1. `stack build backend` (and then find the path in .stack-work) or `stack install backend`
+2. `backend-exe <data directory> <username> <password>`
 
 ### Screenshots
 ![Image](https://i.imgur.com/ggeAgl9.png)
