@@ -5,9 +5,22 @@
       @close="currentEditBook = null"
     ></change-location-dialog>
     <v-data-iterator :items="books" item-key="isbn">
+      <template #no-data>
+        <v-row align="center" justify="center" class="pt-5">
+          <v-col cols="auto" class="font-weight-bold">
+            Keine Bücher gefunden :/
+          </v-col>
+        </v-row>
+      </template>
       <template #default="{ items }">
         <v-row>
-          <v-col v-for="item in items" :key="item.isbn" cols="6" md="6">
+          <v-col
+            v-for="item in items"
+            :key="item.isbn"
+            cols="6"
+            md="6"
+            class="my-0 py-0"
+          >
             <v-card class="ma-5" outlined>
               <v-card-title>{{ item.title }}</v-card-title>
               <v-card-subtitle>

@@ -46,6 +46,11 @@
         </v-card>
       </v-col>
     </v-row>
+    <v-row>
+      <v-col>
+        <add-book></add-book>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
@@ -54,9 +59,11 @@ import { Component, Vue } from 'vue-property-decorator'
 import { vxm } from '@/store'
 import BookList from '@/components/BookList.vue'
 import { Book } from '@/store/types'
+import AddBook from '@/components/AddBook.vue'
 
 @Component({
   components: {
+    'add-book': AddBook,
     'book-list': BookList
   }
 })

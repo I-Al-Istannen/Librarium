@@ -32,6 +32,21 @@ export class BookStore extends VxModule {
   }
 
   @action
+  async addBook(isbn: string) {
+    const response = await axios.put(`/book/${isbn}`)
+
+    const book = bookFromJson(response.data)
+
+    // update or add
+    const index = this._books.findIndex(it => it.isbn === book.isbn)
+    if (index >= 0) {
+      Vue.set(this._books, index, book)
+    } else {
+      this._books.splice(0, 0, book)
+    }
+  }
+
+  @action
   async fetchCover(isbn: string) {
     const response = await axios.get(`/book/${isbn}/cover`, {
       responseType: 'blob'
