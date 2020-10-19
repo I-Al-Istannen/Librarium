@@ -1,11 +1,30 @@
-import Vue from "vue";
-import Vuex from "vuex";
+import Vuex from 'vuex'
+import { extractVuexModule, createProxy } from 'vuex-class-component'
+import Vue from 'vue'
+import { UserStore } from './modules/userStore'
+import VuexPersistence from 'vuex-persist'
 
-Vue.use(Vuex);
+export interface RootState {
+  baseUrl: string
+  userModule: UserStore
+}
 
-export default new Vuex.Store({
-  state: {},
-  mutations: {},
-  actions: {},
-  modules: {}
-});
+Vue.use(Vuex)
+
+const persistence = new VuexPersistence<Partial<RootState>>({
+  storage: window.localStorage
+})
+
+export const store = new Vuex.Store({
+  state: {
+    baseUrl: process.env.VUE_APP_BASE_URL
+  } as RootState,
+  modules: {
+    ...extractVuexModule(UserStore)
+  },
+  plugins: [persistence.plugin]
+})
+
+export const vxm = {
+  user: createProxy(store, UserStore)
+}
