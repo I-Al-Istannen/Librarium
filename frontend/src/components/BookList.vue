@@ -17,7 +17,7 @@
           <v-col
             v-for="item in items"
             :key="item.isbn"
-            cols="6"
+            cols="12"
             md="6"
             class="my-0 py-0"
           >
@@ -42,7 +42,7 @@
                       </v-tooltip>
                     </v-avatar>
                   </v-col>
-                  <v-col>
+                  <v-col cols="12" md="9">
                     {{ item.summary }}
                   </v-col>
                 </v-row>
