@@ -3,6 +3,7 @@ import { extractVuexModule, createProxy } from 'vuex-class-component'
 import Vue from 'vue'
 import { UserStore } from './modules/userStore'
 import VuexPersistence from 'vuex-persist'
+import { BookStore } from '@/store/modules/BookStore'
 
 export interface RootState {
   baseUrl: string
@@ -21,11 +22,13 @@ export const store = new Vuex.Store({
     baseUrl: process.env.VUE_APP_BASE_URL
   } as RootState,
   modules: {
-    ...extractVuexModule(UserStore)
+    ...extractVuexModule(UserStore),
+    ...extractVuexModule(BookStore)
   },
   plugins: [persistence.plugin]
 })
 
 export const vxm = {
-  user: createProxy(store, UserStore)
+  user: createProxy(store, UserStore),
+  books: createProxy(store, BookStore)
 }
