@@ -204,7 +204,8 @@ app config =
   $ hoistServerWithContext bookApi apiContextProxy (_runReader config) server
   where
     policy = simpleCorsResourcePolicy
-           { corsRequestHeaders = [ "content-type", "authorization" ]
+           { corsRequestHeaders = [ "Content-Type", "authorization" ]
+           , corsMethods = [ "DELETE", "GET", "POST", "PUT" ]
            }
 
 main :: IO ()
