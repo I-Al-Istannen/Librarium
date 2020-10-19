@@ -77,7 +77,7 @@ jobs:
 
       # BUILDING
       - name: "Build image"
-        run: "make docker USER_ID=$UID --trace"
+        run: "make docker-ci USER_ID=$UID --trace"
 
       - name: "Log into registry"
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
@@ -103,3 +103,24 @@ jobs:
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
+
+  # Deploy master
+  deploy-aaaaaaah:
+    # Ensure build job passes before pushing image.
+    needs: [push]
+
+    runs-on: ubuntu-latest
+    if: "github.event_name == 'push' && github.ref == 'refs/heads/master'"
+
+    env:
+      CD_PORT: ${{ secrets.CD_PORT }}
+      CD_URL: ${{ secrets.CD_URL }}
+      CD_USER: ${{ secrets.CD_USER }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_NAME: ${{ secrets.GITHUB_NAME }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: "Call deploy script"
+        run: "bash deploy/deploy.sh ${{ github.actor }} ${{ secrets.GITHUB_TOKEN }}"
