@@ -5,6 +5,7 @@
     </v-card-title>
     <v-card-text class="d-flex align-center justify-center">
       <div style="width: 600px">
+        <scan-barcode @code="codeScanned"></scan-barcode>
         <v-text-field
           @keydown.enter="addBook"
           label="Enter Isbn..."
@@ -46,8 +47,11 @@
 import Vue from 'vue'
 import Component from 'vue-class-component'
 import { vxm } from '@/store'
+import ScanBarcode from '@/components/dialogs/ScanBarcode.vue'
 
-@Component
+@Component({
+  components: { ScanBarcode }
+})
 export default class AddBook extends Vue {
   private isbn: string = ''
   private addBookLoading: boolean = false
@@ -55,6 +59,10 @@ export default class AddBook extends Vue {
 
   private get allLocations() {
     return vxm.books.locations
+  }
+
+  private codeScanned(code: string) {
+    this.isbn = code
   }
 
   private async addBook() {
