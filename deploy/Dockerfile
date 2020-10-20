@@ -31,6 +31,7 @@ COPY start.sh /home/librarium/start.sh
 
 # Include backend files
 COPY backend-exe /home/librarium/backend
+RUN chmod +x /home/librarium/backend
 COPY dist /home/librarium/frontend
 
 # We should be able to place temp data in there
