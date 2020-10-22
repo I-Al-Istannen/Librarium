@@ -17,7 +17,6 @@ module Webserver.Server
   where
 
 import           Book
-import           Control.Applicative
 import           Control.Concurrent
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Reader
@@ -76,7 +75,12 @@ _buildError :: ServerError -> String -> ServerError
 _buildError baseError msg = baseError { errBody = encode $ object ["error" .= msg]}
 
 _scrape :: Isbn -> IO (Maybe CrawlResult)
-_scrape isbn = scrapeGoodreads isbn <|> scrapeBuchhandel isbn
+_scrape isbn = do
+  goodreadsResult <- scrapeGoodreads isbn
+  case goodreadsResult of
+    (Just result) -> return $ Just result
+    Nothing       -> scrapeBuchhandel isbn
+
 
 server :: ServerT BookApi AppMonad
 server _ = allBooks
