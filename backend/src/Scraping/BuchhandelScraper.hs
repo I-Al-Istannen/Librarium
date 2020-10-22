@@ -4,8 +4,6 @@ module Scraping.BuchhandelScraper
   )
   where
 
--- https://openlibrary.org/isbn/3442067375.json
-
 import           Book
 import           Control.Applicative
 import qualified Data.Aeson                as A
