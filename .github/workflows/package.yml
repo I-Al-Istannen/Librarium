@@ -19,7 +19,7 @@ jobs:
 
       - name: "Build frontend"
         run: "make frontend mode=production"
-      - name: "Upload frontend artifacts (aaaaaaah.de)"
+      - name: "Upload frontend artifacts"
         uses: actions/upload-artifact@v2
         with:
           name: frontend-artifacts
@@ -105,7 +105,7 @@ jobs:
           docker push $IMAGE_ID:$VERSION
 
   # Deploy master
-  deploy-aaaaaaah:
+  deploy:
     # Ensure build job passes before pushing image.
     needs: [push]
 
