@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c2c27eb7749feb09c2a2ec5784276c3052e86d942ff057dc95fc52fac5820b87
+-- hash: 2da2ab2321bc63af3e60bc894eaef410d8ce933bbdd3a5f4977488a100bbc919
 
 name:           backend
 version:        0.1.0.0
@@ -24,6 +24,7 @@ source-repository head
 library
   exposed-modules:
       Book
+      Scraping.BuchhandelScraper
       Scraping.GoodreadsScraper
       Storage
       Webserver.Server
