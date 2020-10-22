@@ -61,8 +61,8 @@ type UnsecureBookApi =
 type BookApi = BasicAuth "librarium" User :> UnsecureBookApi
 
 data ServerConfig = ServerConfig
- { serverDataDir :: FilePath
- , serverUsers   :: [(String, String)]
+ { serverDataDir :: !FilePath
+ , serverUsers   :: ![(String, String)]
  , serverBooks   :: MVar (Map.Map Isbn Book)
 }
 

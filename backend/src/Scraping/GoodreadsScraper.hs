@@ -14,8 +14,8 @@ import qualified Data.Text           as T
 import           Text.HTML.Scalpel
 
 data CrawlResult = CrawlResult
-  { _book       :: Book
-  , _coverImage :: Maybe String
+  { _book       :: !Book
+  , _coverImage :: !(Maybe String)
   }
   deriving (Show)
 

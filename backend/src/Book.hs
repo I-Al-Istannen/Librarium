@@ -25,8 +25,8 @@ import           GHC.Generics
 import           Servant
 
 data Isbn
-  = Isbn10 [Int]
-  | Isbn13 [Int]
+  = Isbn10 ![Int]
+  | Isbn13 ![Int]
   deriving (Generic)
 
 instance A.ToJSON Isbn where
@@ -108,14 +108,14 @@ toIsbn13 (Isbn10 numbers) = let
 toIsbn13 isbn             = isbn
 
 data Book = Book
-  { _title     :: T.Text
-  , _isbn      :: Isbn
-  , _author    :: [T.Text]
-  , _summary   :: Maybe T.Text
-  , _pages     :: Maybe Int
-  , _language  :: Maybe T.Text
-  , _location  :: Maybe T.Text
-  , _crawledBy :: T.Text
+  { _title     :: !T.Text
+  , _isbn      :: !Isbn
+  , _author    :: ![T.Text]
+  , _summary   :: !(Maybe T.Text)
+  , _pages     :: !(Maybe Int)
+  , _language  :: !(Maybe T.Text)
+  , _location  :: !(Maybe T.Text)
+  , _crawledBy :: !T.Text
   } deriving (Generic, Show)
 
 instance A.ToJSON Book where
