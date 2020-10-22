@@ -57,7 +57,8 @@ export class BookStore extends VxModule {
   @action
   async fetchCover(isbn: string) {
     const response = await axios.get(`/book/${isbn}/cover`, {
-      responseType: 'blob'
+      responseType: 'blob',
+      hideFromSnackbar: true
     })
     return response.data
   }
