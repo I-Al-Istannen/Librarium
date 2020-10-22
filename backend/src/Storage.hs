@@ -3,6 +3,8 @@
 module Storage
   ( loadBook
   , storeBook
+  , addFailedIsbn
+  , getFailedIsbns
   , listAllIsbns
   , listAllBooks
   , storeCover
@@ -14,7 +16,9 @@ import           Control.Monad
 import qualified Data.ByteString     as BS
 import           Data.Either
 import           Data.Maybe
+import qualified Data.Set            as Set
 import qualified Data.Text           as T
+import           Data.Time.Clock
 import           Network.HTTP.Simple
 import           System.Directory
 
@@ -55,6 +59,28 @@ listAllBooks directory = do
   books <- mapM (loadBook directory) isbns
 
   return $ rights books
+
+addFailedIsbn :: FilePath -> Isbn  -> IO ()
+addFailedIsbn directory isbn = do
+  let path = directory ++ "/" ++ "failed_isbns.txt"
+  time <- getCurrentTime
+  appendFile path $ "\n" ++ show isbn ++ "\t" ++ show time
+
+_getRight :: Either a b -> Maybe b
+_getRight (Left  _) = Nothing
+_getRight (Right v) = Just v
+
+getFailedIsbns :: FilePath -> IO [Isbn]
+getFailedIsbns directory = do
+  let path = directory ++ "/" ++ "failed_isbns.txt"
+  entries <- filter (/= "") . lines <$> readFile path
+
+  let isbnStrings = distinct $ map ((!! 0) . words) entries
+  return $ mapMaybe (_getRight . isbnFromString) isbnStrings
+
+  where
+    distinct :: (Ord a) => [a] -> [a]
+    distinct = Set.toList . Set.fromList
 
 storeCover :: FilePath -> Isbn -> Url -> IO ()
 storeCover directory isbn url = do

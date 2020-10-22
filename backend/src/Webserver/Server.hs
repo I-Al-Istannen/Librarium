@@ -163,7 +163,10 @@ server _ = allBooks
       crawlResult <- liftIO $ scrapeGoodreads isbn
 
       case crawlResult of
-        Nothing -> throwError $ _buildError err404 "Book not found :/"
+        Nothing -> do
+          dir <- bookDir
+          liftIO $ addFailedIsbn dir isbn
+          throwError $ _buildError err404 "Book not found :/"
         (Just result) -> do
           addBook (_book result) (_coverImage result)
           return (_book result)

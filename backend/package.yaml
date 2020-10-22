@@ -25,6 +25,7 @@ dependencies:
 - servant
 - servant-server >= 0.18
 - text
+- time
 - transformers
 - wai
 - wai-cors
