@@ -29,12 +29,20 @@ jobs:
   build-backend:
     runs-on: ubuntu-latest
 
+    env:
+      LANG: "de_DE.UTF-8"
+      LANGUAGE: "de_DE"
+      LC_ALL: "de_DE.UTF-8"
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-haskell@v1.1
         with:
           enable-stack: true
           stack-version: 'latest'
+
+      - name: "Setup locale"
+        run: "sudo apt update && sudo apt install locales -y && sudo sed -i 's/# de_DE.UTF-8/de_DE.UTF-8/' /etc/locale.gen && sudo locale-gen de_DE.UTF-8"
 
       - uses: actions/cache@v2
         with:

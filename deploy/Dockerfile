@@ -6,7 +6,11 @@ LABEL "librarium"="true"
 
 # We use nginx as a reverse proxy
 # We use sudo to drop privileges
-RUN apt update && apt install nginx -y && apt install sudo -y && apt install libc6 -y
+RUN apt update && apt install nginx -y && apt install sudo -y && apt install libc6 -y && apt install locales -y
+
+# Update locale
+RUN sed -i 's/# de_DE.UTF-8/de_DE.UTF-8/' /etc/locale.gen && locale-gen de_DE.UTF-8
+ENV LANG=de_DE.UTF-8 \ LANGUAGE=de_DE \ LC_ALL=de_DE.UTF-8
 
 # Preconfigured nginx configs for deployment
 COPY nginx-site /etc/nginx/sites-available/nginx-site
