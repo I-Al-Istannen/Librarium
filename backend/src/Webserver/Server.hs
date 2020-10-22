@@ -17,6 +17,7 @@ module Webserver.Server
   where
 
 import           Book
+import           Control.Applicative
 import           Control.Concurrent
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Reader
@@ -30,6 +31,7 @@ import           Data.Proxy
 import qualified Data.Text                   as T
 import           Network.Wai
 import           Network.Wai.Middleware.Cors
+import           Scraping.BuchhandelScraper
 import           Scraping.GoodreadsScraper
 import           Servant
 import           Storage
@@ -72,6 +74,9 @@ orElse (Just a) _ = a
 
 _buildError :: ServerError -> String -> ServerError
 _buildError baseError msg = baseError { errBody = encode $ object ["error" .= msg]}
+
+_scrape :: Isbn -> IO (Maybe CrawlResult)
+_scrape isbn = scrapeGoodreads isbn <|> scrapeBuchhandel isbn
 
 server :: ServerT BookApi AppMonad
 server _ = allBooks
@@ -160,7 +165,7 @@ server _ = allBooks
 
     addBookByIsbn :: Isbn -> AppMonad Book
     addBookByIsbn isbn = do
-      crawlResult <- liftIO $ scrapeGoodreads isbn
+      crawlResult <- liftIO $ _scrape isbn
 
       case crawlResult of
         Nothing -> do
@@ -184,7 +189,6 @@ server _ = allBooks
 
       ServerConfig{serverBooks = books} <- ask
       liftIO $ modifyMVar_ books (pure . Map.insert isbn book)
-
 
 bookApi :: Proxy BookApi
 bookApi = Proxy
