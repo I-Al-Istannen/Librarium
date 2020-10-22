@@ -76,10 +76,10 @@ _buildError baseError msg = baseError { errBody = encode $ object ["error" .= ms
 
 _scrape :: Isbn -> IO (Maybe CrawlResult)
 _scrape isbn = do
-  goodreadsResult <- scrapeGoodreads isbn
-  case goodreadsResult of
+  firstResult <- scrapeBuchhandel isbn
+  case firstResult of
     (Just result) -> return $ Just result
-    Nothing       -> scrapeBuchhandel isbn
+    Nothing       -> scrapeGoodreads isbn
 
 
 server :: ServerT BookApi AppMonad
