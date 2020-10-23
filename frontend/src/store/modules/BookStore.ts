@@ -29,7 +29,9 @@ export class BookStore extends VxModule {
       }
     })
 
-    this._books = response.data.map(bookFromJson)
+    const books = response.data.map(bookFromJson)
+    books.sort((a: Book, b: Book) => a.title.localeCompare(b.title))
+    this._books = books
   }
 
   @action
