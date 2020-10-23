@@ -87,6 +87,16 @@ export class BookStore extends VxModule {
     }
   }
 
+  @action
+  async deleteBook(isbn: string) {
+    await axios.delete(`/book/${isbn}`)
+
+    const index = this._books.findIndex(it => it.isbn === isbn)
+    if (index >= 0) {
+      this._books.splice(index, 1)
+    }
+  }
+
   get books() {
     return this._books
   }

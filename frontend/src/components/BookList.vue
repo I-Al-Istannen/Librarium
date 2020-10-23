@@ -22,7 +22,13 @@
             class="my-0 py-0"
           >
             <v-card class="ma-5" outlined>
-              <v-card-title>{{ item.title }}</v-card-title>
+              <v-card-title>
+                {{ item.title }}
+                <v-spacer></v-spacer>
+                <v-btn icon @click="deleteBook(item)">
+                  <v-icon color="error">{{ deleteIcon }}</v-icon>
+                </v-btn>
+              </v-card-title>
               <v-card-subtitle>
                 {{ item.chunkedIsbn }} - {{ item.language }}
               </v-card-subtitle>
@@ -102,6 +108,7 @@ import {
   mdiAccountMultiple,
   mdiBookOpenPageVariantOutline,
   mdiBookshelf,
+  mdiDelete,
   mdiLeadPencil,
   mdiRobot
 } from '@mdi/js'
@@ -165,8 +172,35 @@ export default class BookList extends Vue {
     })
   }
 
+  private deleteBook(book: Book) {
+    if (!window.confirm(`Do you really want to delete ${book.title}?`)) {
+      return
+    }
+    vxm.books.deleteBook(book.isbn)
+  }
+
+  private toggleExpandSummary(e: Event) {
+    let target: HTMLElement | null = e.target as HTMLElement
+    while (target && !target.classList.contains('v-card')) {
+      target = target.parentElement
+    }
+
+    if (!target) {
+      return
+    }
+
+    const summaryItem = target.getElementsByClassName('summary')[0]
+
+    if (summaryItem.classList.contains('expanded')) {
+      summaryItem.classList.remove('expanded')
+    } else {
+      summaryItem.classList.add('expanded')
+    }
+  }
+
   // ICONS
   private locationIcon = mdiBookshelf
   private changeLocationIcon = mdiLeadPencil
+  private deleteIcon = mdiDelete
 }
 </script>
