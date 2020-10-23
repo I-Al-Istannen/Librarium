@@ -49,7 +49,17 @@
                     </v-avatar>
                   </v-col>
                   <v-col cols="12" md="9">
-                    {{ item.summary }}
+                    <div class="summary">
+                      {{ item.summary }}
+                    </div>
+                    <v-btn
+                      class="pa-0 ma-0"
+                      small
+                      text
+                      @click="toggleExpandSummary"
+                    >
+                      Mehr...
+                    </v-btn>
                   </v-col>
                 </v-row>
 
@@ -204,3 +214,17 @@ export default class BookList extends Vue {
   private deleteIcon = mdiDelete
 }
 </script>
+
+<style scoped>
+.summary {
+  max-height: 20ch;
+  white-space: pre-line;
+  overflow: hidden;
+  transition: max-height 0.5s ease-in;
+}
+
+/*noinspection CssUnusedSymbol*/
+.summary.expanded {
+  max-height: 100vh;
+}
+</style>
