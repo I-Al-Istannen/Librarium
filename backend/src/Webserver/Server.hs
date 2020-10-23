@@ -42,6 +42,8 @@ type UnsecureBookApi =
   :<|> "book" :> Capture "isbn" Isbn :> Get '[JSON] Book
        -- PUT /book/:isbn
   :<|> "book" :> Capture "isbn" Isbn :> Put '[JSON] Book
+       -- DELETE /book/:isbn
+  :<|> "book" :> Capture "isbn" Isbn :> Delete '[JSON] ()
        -- GET /book/:isbn/cover
   :<|> "book" :> Capture "isbn" Isbn :> "cover" :> Get '[OctetStream] BS.ByteString
        -- PUT /book/:isbn/location [Body=location name]
@@ -84,7 +86,7 @@ _scrape isbn = do
 
 server :: ServerT BookApi AppMonad
 server _ = allBooks
-  :<|> bookByIsbn :<|> addBookByIsbn :<|> coverByIsbn
+  :<|> bookByIsbn :<|> addBookByIsbn :<|> deleteBook :<|> coverByIsbn
   :<|> addOrOverwriteBookLocation :<|> deleteBookLocation
   :<|> searchBooks
   :<|> allLocations
@@ -117,6 +119,22 @@ server _ = allBooks
       case coverMaybe of
         Nothing   -> throwError $ _buildError err404 "Book not found"
         (Just bs) -> return bs
+
+    deleteBook :: Isbn -> AppMonad ()
+    deleteBook isbn = do
+      books <- bookMap
+
+      if isbn `Map.notMember` books then
+        throwError $ _buildError err404 "Book not found"
+      else do
+        -- Delete book from storage
+        dir <- bookDir
+        liftIO $ removeBook dir isbn
+
+        -- Delete book from cache
+        mVar <- serverBooks <$> ask
+        liftIO $ modifyMVar_ mVar (pure . Map.delete isbn)
+        return ()
 
     addOrOverwriteBookLocation :: Isbn -> T.Text -> AppMonad Book
     addOrOverwriteBookLocation isbn location = setBookLocation isbn (Just location)

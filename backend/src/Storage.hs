@@ -3,6 +3,7 @@
 module Storage
   ( loadBook
   , storeBook
+  , removeBook
   , addFailedIsbn
   , getFailedIsbns
   , listAllIsbns
@@ -41,6 +42,23 @@ storeBook directory book = do
   return ()
   where
     filePath = _isbnToPath directory ".json" (_isbn book)
+
+removeBook :: FilePath -> Isbn -> IO ()
+removeBook directory isbn = do
+  jsonExists <- doesFileExist jsonPath
+  if jsonExists then
+    removeFile jsonPath
+  else
+     pure ()
+
+  imgExists <- doesFileExist imgPath
+  if imgExists then
+    removeFile imgPath
+  else
+    pure ()
+  where
+    jsonPath = _isbnToPath directory ".json" isbn
+    imgPath = _isbnToPath directory ".img" isbn
 
 listAllIsbns :: FilePath -> IO [Isbn]
 listAllIsbns directory = do
