@@ -151,7 +151,7 @@ server _ = allBooks
       return updatedBook
 
     allLocations :: AppMonad [T.Text]
-    allLocations = mapMaybe _location <$> allBooks
+    allLocations = nub . mapMaybe _location <$> allBooks
 
     searchBooks :: Maybe T.Text -> Maybe T.Text -> Maybe T.Text -> AppMonad [Book]
     searchBooks titleFragment summaryFragment locationFragment = do
