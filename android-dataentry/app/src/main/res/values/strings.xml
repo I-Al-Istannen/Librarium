@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Librarium</string>
+    <string name="label_location">Ort</string>
+    <string name="label_isbn">ISBN</string>
+    <string name="hint_isbn_input">ISBN…</string>
+    <string name="label_submit">Hinzufügen</string>
+    <string name="label_refresh_locations">Orte aktualisieren</string>
+</resources>
