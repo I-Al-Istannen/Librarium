@@ -4,7 +4,11 @@
       :book="currentEditBook"
       @close="currentEditBook = null"
     ></change-location-dialog>
-    <v-data-iterator :items="books" item-key="isbn">
+    <v-data-iterator
+      :items="books"
+      item-key="isbn"
+      @current-items="scheduleObservation"
+    >
       <template #no-data>
         <v-row align="center" justify="center" class="pt-5">
           <v-col cols="auto" class="font-weight-bold">
@@ -21,7 +25,11 @@
             md="6"
             class="my-0 py-0"
           >
-            <v-card class="ma-5" outlined>
+            <v-card
+              class="ma-5 book-observe-card"
+              outlined
+              :data-isbn="item.isbn"
+            >
               <v-card-title>
                 {{ item.title }}
                 <v-spacer></v-spacer>
@@ -123,6 +131,7 @@ import {
   mdiRobot
 } from '@mdi/js'
 import ChangeLocationDialog from '@/components/dialogs/ChangeLocationDialog.vue'
+
 @Component({
   components: { ChangeLocationDialog }
 })
@@ -132,6 +141,7 @@ export default class BookList extends Vue {
 
   private currentEditBook: Book | null = null
   private bookUrls: { [isbn: string]: string | null } = {}
+  private intersectionObserver?: IntersectionObserver
 
   private additionalProperties: {
     label: string
@@ -164,8 +174,12 @@ export default class BookList extends Vue {
   }
 
   private async coverForBook(book: Book): Promise<void> {
-    const blob = await vxm.books.fetchCover(book.isbn)
-    Vue.set(this.bookUrls, book.isbn, URL.createObjectURL(blob))
+    try {
+      const blob = await vxm.books.fetchCover(book.isbn)
+      Vue.set(this.bookUrls, book.isbn, URL.createObjectURL(blob))
+    } catch (ignored) {
+      // ignore this
+    }
   }
 
   @Watch('books')
@@ -175,11 +189,7 @@ export default class BookList extends Vue {
 
     onlyInOld.forEach(it => delete this.bookUrls[it])
 
-    this.books.forEach(it => {
-      if (this.bookUrls[it.isbn] === undefined) {
-        this.coverForBook(it)
-      }
-    })
+    this.scheduleObservation()
   }
 
   private deleteBook(book: Book) {
@@ -205,6 +215,50 @@ export default class BookList extends Vue {
       summaryItem.classList.remove('expanded')
     } else {
       summaryItem.classList.add('expanded')
+    }
+  }
+
+  private scheduleObservation() {
+    Vue.nextTick(() => {
+      Array.from(document.getElementsByClassName('book-observe-card')).forEach(
+        it => {
+          this.intersectionObserver!.observe(it)
+        }
+      )
+    })
+  }
+
+  private mounted() {
+    this.intersectionObserver = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) {
+            return
+          }
+
+          if (this.intersectionObserver) {
+            this.intersectionObserver.unobserve(entry.target)
+          }
+
+          const isbn = entry.target.getAttribute('data-isbn')
+
+          const book = this.books.find(it => it.isbn === isbn)
+
+          if (book) {
+            this.coverForBook(book)
+          }
+        })
+      },
+      {
+        threshold: 0.0,
+        root: null
+      }
+    )
+  }
+
+  private beforeDestroy() {
+    if (this.intersectionObserver) {
+      this.intersectionObserver.disconnect()
     }
   }
 
